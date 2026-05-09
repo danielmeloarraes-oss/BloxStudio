@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BloxStudio</title>
+
+  <style>
+    
+  </style>
+
+  
+</head>
+<body>
+  <!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloxStudio - Minecraft Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/TransformControls.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: #1a1a1a; }
+        #editor-ui { position: fixed; top: 20px; right: 20px; width: 220px; background: rgba(0, 0, 0, 0.85); padding: 15px; border-radius: 10px; color: white; display: none; border: 1px solid #444; z-index: 10; backdrop-filter: blur(5px); }
+        #btn-open-script { position: fixed; left: 15px; top: 50%; transform: translateY(-50%); width: 65px; height: 65px; border-radius: 50%; background: #deff9a; color: black; border: 2px solid #ffffff33; cursor: pointer; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; z-index: 21; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center; }
+        #script-sidebar { position: fixed; left: -350px; top: 0; width: 320px; height: 100%; background: #1e1e1e; border-right: 3px solid #deff9a; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 20; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        #script-sidebar.active { left: 0; }
+        #script-input { width: 100%; height: 55%; background: #000; color: #deff9a; border: 1px solid #333; font-family: 'Consolas', monospace; padding: 10px; resize: none; margin-bottom: 10px; border-radius: 5px; box-sizing: border-box; font-size: 12px; }
+        #screen-welcome { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #1a1a1a, #000); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: white; }
+        #color-lock-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; z-index: 50; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+        .menu-title { font-weight: bold; margin-bottom: 8px; border-bottom: 1px solid #555; padding-bottom: 5px; margin-top: 15px; font-size: 0.8rem; color: #deff9a; text-transform: uppercase; }
+        select, button, input { width: 100%; padding: 10px; margin-bottom: 10px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; box-sizing: border-box; }
+        .btn-action { background: #27ae60; color: white; }
+        .btn-run { background: #deff9a; color: black; font-size: 1rem; }
+        .btn-tool { background: #444; color: white; }
+        .btn-sandy { background: #e67e22; color: white; }
+        #script-status { color: #deff9a; font-size: 0.8rem; text-align: center; margin-top: 10px; min-height: 1.2em; }
+        .info-text { font-size: 11px; color: #888; text-align: center; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="screen-welcome">
+        <h1 style="font-size: 3rem; margin-bottom: 0;">Blox<span style="color:#deff9a">Studio</span></h1>
+        <p style="margin-bottom: 30px; opacity: 0.8;">Modo Minecraft - Apenas Blocos</p>
+        <button style="width:250px" class="btn-action" onclick="initGame()">ENTRAR NO EDITOR</button>
+    </div>
+
+    <button id="btn-open-script" onclick="toggleScriptSide()">SANDY<br>SCRIPT</button>
+
+    <div id="script-sidebar">
+        <h2 style="color: #deff9a; margin-top: 0;">SandyScripting</h2>
+        <textarea id="script-input" spellcheck="false" placeholder="Cole aqui o código .sandy para importar"></textarea>
+        <button class="btn-run" onclick="runSandyScript()">IMPORTAR MAPA</button>
+        <button class="btn-sandy" onclick="exportToSandy()">EXPORTAR .SANDY</button>
+        <button class="btn-tool" onclick="toggleScriptSide()">FECHAR</button>
+        <div id="script-status"></div>
+        <div class="info-text">Formato: apenas blocos (cubos)<br>Compatível com SandBlox</div>
+    </div>
+
+    <div id="color-lock-overlay">
+        <div style="background: #222; padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #deff9a; width: 300px;">
+            <h2>Novo Bloco!</h2>
+            <input type="color" id="spawn-color-picker" value="#ffffff">
+            <button class="btn-action" onclick="confirmObjectColor()">CONFIRMAR</button>
+        </div>
+    </div>
+
+    <div id="editor-ui">
+        <div class="menu-title">📦 Blocos</div>
+        <button class="btn-action" onclick="prepareObject()">➕ ADICIONAR BLOCO</button>
+        
+        <div class="menu-title">🎨 Baseplate</div>
+        <input type="color" id="baseplate-color" value="#228B22" onchange="updateBaseplateColor()">
+        
+        <div class="menu-title">💾 Publicação</div>
+        <input type="text" id="pub-name" placeholder="Nome do Jogo...">
+        
+        <div class="menu-title">🛠️ Ferramentas</div>
+        <button class="btn-tool" onclick="setTool('translate')">MOVER BLOCO</button>
+        <button class="btn-tool" style="background:#c0392b" onclick="deleteObject()">❌ DELETAR BLOCO</button>
+        
+        <div class="info-text" style="margin-top: 15px;">← Clique no bloco e use Mover<br>WASD para girar a câmera</div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls, transformControls;
+        let objects = [];
+        let ground, currentPendingObject = null;
+
+        function initGame() {
+            document.getElementById('screen-welcome').style.display = 'none';
+            document.getElementById('editor-ui').style.display = 'block';
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+            scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
+            
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(15, 15, 15);
+            camera.lookAt(0, 0, 0);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
+            
+            // Luzes
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(10, 20, 5);
+            directionalLight.castShadow = true;
+            directionalLight.receiveShadow = true;
+            directionalLight.shadow.mapSize.width = 1024;
+            directionalLight.shadow.mapSize.height = 1024;
+            scene.add(directionalLight);
+            
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            backLight.position.set(-5, 10, -10);
+            scene.add(backLight);
+            
+            // Chão (baseplate)
+            const groundGeo = new THREE.BoxGeometry(200, 1, 200);
+            ground = new THREE.Mesh(groundGeo, new THREE.MeshStandardMaterial({ color: 0x228B22, roughness: 0.8, metalness: 0.1 }));
+            ground.position.y = -1;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            
+            // Grid helper
+            const grid = new THREE.GridHelper(200, 40, 0x888888, 0x444444);
+            grid.position.y = -0.5;
+            scene.add(grid);
+            
+            // Controles
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.screenSpacePanning = true;
+            controls.maxPolarAngle = Math.PI / 2.2;
+            
+            transformControls = new THREE.TransformControls(camera, renderer.domElement);
+            transformControls.addEventListener('dragging-changed', (e) => {
+                controls.enabled = !e.value;
+            });
+            scene.add(transformControls);
+            
+            animate();
+        }
+
+        function runSandyScript() {
+            const input = document.getElementById('script-input').value;
+            const status = document.getElementById('script-status');
+            try {
+                // Limpar objetos existentes (exceto chão e grid)
+                objects.forEach(obj => {
+                    if (obj !== ground) {
+                        scene.remove(obj);
+                    }
+                });
+                objects = [];
+                
+                // Parse do arquivo .sandy
+                const lines = input.split('\n');
+                let baseplateColor = null;
+                
+                lines.forEach(line => {
+                    line = line.trim();
+                    
+                    // Ler cor da baseplate
+                    if (line.startsWith('_sandylocal_baseplate_cor_')) {
+                        baseplateColor = line.replace('_sandylocal_baseplate_cor_', '').trim();
+                        if (baseplateColor && baseplateColor !== document.getElementById('baseplate-color').value) {
+                            document.getElementById('baseplate-color').value = baseplateColor;
+                            updateBaseplateColor();
+                        }
+                    }
+                    
+                    // Ler blocos
+                    if (line.includes('_gerar_boneco_local_id_')) {
+                        // Extrair posição: pos_X_Y_Z
+                        const posMatch = line.match(/pos_([-\d.]+)_([-\d.]+)_([-\d.]+)/);
+                        if (!posMatch) return;
+                        
+                        const x = parseFloat(posMatch[1]);
+                        const y = parseFloat(posMatch[2]);
+                        const z = parseFloat(posMatch[3]);
+                        
+                        // Extrair cor
+                        let corMatch = line.match(/cor_([#a-fA-F0-9]+)/);
+                        let color = corMatch ? corMatch[1] : '#ffffff';
+                        if (color && !color.startsWith('#')) color = '#' + color;
+                        
+                        // Extrair escala (opcional, mas suportado)
+                        const escMatch = line.match(/escala_([-\d.]+)/);
+                        let scale = escMatch ? parseFloat(escMatch[1]) : 1;
+                        if (isNaN(scale)) scale = 1;
+                        
+                        // Criar bloco (sempre cubo)
+                        const size = 2 * scale;
+                        const geometry = new THREE.BoxGeometry(size, size, size);
+                        const material = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.1 });
+                        const block = new THREE.Mesh(geometry, material);
+                        block.position.set(x, y, z);
+                        block.castShadow = true;
+                        block.receiveShadow = true;
+                        scene.add(block);
+                        objects.push(block);
+                    }
+                });
+                
+                status.innerText = `✓ Importado ${objects.length} blocos!`;
+                status.style.color = "#deff9a";
+                
+                // Atualizar controles de transformação
+                if (transformControls.object) {
+                    transformControls.detach();
+                }
+                
+            } catch (e) {
+                status.innerText = "Erro: " + e.message;
+                status.style.color = "#ff4444";
+            }
+        }
+
+        function exportToSandy() {
+            let scriptFinal = "_iniciando_sandblox_build\n";
+            scriptFinal += `_sandylocal_baseplate_cor_${document.getElementById('baseplate-color').value}\n`;
+            
+            objects.forEach((obj, i) => {
+                const p = obj.position;
+                const c = "#" + obj.material.color.getHexString();
+                // Escala padrão = 1 (tamanho do bloco é 2x2x2)
+                scriptFinal += `_gerar_boneco_local_id_BLOCO${i}_pos_${p.x.toFixed(2)}_${p.y.toFixed(2)}_${p.z.toFixed(2)}_cor_${c}_escala_1\n`;
+            });
+            
+            const blob = new Blob([scriptFinal], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = (document.getElementById('pub-name').value || "meu_mapa") + ".sandy";
+            link.click();
+            
+            const status = document.getElementById('script-status');
+            status.innerText = `✓ Exportado ${objects.length} blocos!`;
+            status.style.color = "#deff9a";
+            setTimeout(() => {
+                status.innerText = "";
+            }, 3000);
+        }
+
+        function updateBaseplateColor() {
+            const color = document.getElementById('baseplate-color').value;
+            if (ground && ground.material) {
+                ground.material.color.set(color);
+            }
+        }
+        
+        function toggleScriptSide() {
+            document.getElementById('script-sidebar').classList.toggle('active');
+        }
+        
+        function prepareObject() {
+            // Sempre criar um cubo (bloco) do tamanho padrão 2x2x2
+            const geometry = new THREE.BoxGeometry(2, 2, 2);
+            currentPendingObject = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, metalness: 0.1 }));
+            currentPendingObject.castShadow = true;
+            currentPendingObject.receiveShadow = true;
+            document.getElementById('color-lock-overlay').style.display = 'flex';
+        }
+        
+        function confirmObjectColor() {
+            const color = document.getElementById('spawn-color-picker').value;
+            currentPendingObject.material.color.set(color);
+            
+            // Posicionar acima do chão
+            currentPendingObject.position.set(0, 1, 0);
+            
+            scene.add(currentPendingObject);
+            objects.push(currentPendingObject);
+            transformControls.attach(currentPendingObject);
+            document.getElementById('color-lock-overlay').style.display = 'none';
+        }
+        
+        function setTool(mode) {
+            if (mode === 'translate') {
+                transformControls.setMode('translate');
+            }
+        }
+        
+        function deleteObject() {
+            if (transformControls.object) {
+                scene.remove(transformControls.object);
+                objects = objects.filter(o => o !== transformControls.object);
+                transformControls.detach();
+            }
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Atualiza os controles da câmera
+            renderer.render(scene, camera);
+        }
+        
+        // Controles de teclado para câmera (WASD)
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            const speed = 0.5;
+            
+            if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+            
+            // Movimento da câmera com WASD (quando não está arrastando objeto)
+            if (!transformControls.dragging) {
+                const forward = new THREE.Vector3();
+                const right = new THREE.Vector3();
+                camera.getWorldDirection(forward);
+                right.crossVectors(camera.up, forward);
+                forward.y = 0;
+                forward.normalize();
+                right.normalize();
+                
+                switch(key) {
+                    case 'w': camera.position.addScaledVector(forward, speed); break;
+                    case 's': camera.position.addScaledVector(forward, -speed); break;
+                    case 'a': camera.position.addScaledVector(right, speed); break;
+                    case 'd': camera.position.addScaledVector(right, -speed); break;
+                }
+                controls.target.addScaledVector(forward, key === 'w' ? speed : key === 's' ? -speed : 0);
+                controls.target.addScaledVector(right, key === 'a' ? speed : key === 'd' ? -speed : 0);
+            }
+        });
+    </script>
+</body>
+</html>
+
+  <script>
+    
+  </script>
+</body>
+</html>
